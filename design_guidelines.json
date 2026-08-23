@@ -1,0 +1,116 @@
+{
+  "project_context": {
+    "app_type": "SaaS Dashboard / Business Management Internal Tool",
+    "brand_name": "SANJU ANIMATIONS IT SOLUTIONS",
+    "currency": "INR (₹)",
+    "target_audience": "Freelancer managing digital marketing & messaging services clients"
+  },
+  "theme_strategy": "Light mode primary (crucial for PDF generation of invoices/quotes), orange-and-white SaaS identity with 'Calm Density'. Emphasize typographic hierarchy over heavy container boxes.",
+  "archetype": "Modern SaaS, warm accent on neutral canvas",
+  "typography": {
+    "headings": {
+      "font": "Sora",
+      "fallback": "Inter",
+      "weights": [500, 600, 700, 800],
+      "rules": "Must use tight letter spacing (tracking-tight). Keep hierarchy strict (e.g., H1 text-4xl, H2 text-2xl)."
+    },
+    "body": {
+      "font": "Inter",
+      "fallback": "system sans-serif",
+      "weights": [400, 500, 600],
+      "rules": "Use 'tabular-nums' utility for ALL tables, invoices, currency amounts, and numerical data."
+    }
+  },
+  "colors": {
+    "primary": "#EA580C",
+    "primary_hover": "#C2410C",
+    "background": "#FFFFFF",
+    "surface": "#FFF7ED",
+    "border": "#F0E4DA",
+    "text_main": "#09090B",
+    "text_muted": "#71717A",
+    "status": {
+      "success": "#16A34A",
+      "warning": "#EAB308",
+      "danger": "#DC2626",
+      "draft": "#71717A",
+      "info": "#2563EB"
+    },
+    "forbidden": [
+      "#002FA7",
+      "teal green",
+      "teal blue",
+      "generic full-screen gradients"
+    ]
+  },
+  "visual_enhancers": {
+    "borders": "1px solid crisp borders (border-border) everywhere. No soft drop-shadows on standard cards.",
+    "radius": "Subtle roundness, max 8px (rounded-md). Avoid full pill shapes except for status badges.",
+    "surfaces": "Grid Borders ('Technical Look') - expose the skeleton, use border-collapse styles for dense data tables.",
+    "spacing": "Dense and compact (p-4 to p-6) for dashboard widgets. Generous spacing (p-8 to p-12) for outer page containers.",
+    "glassmorphism": "Only use for sticky elements (e.g., backdrop-blur-md bg-white/80 border-b)."
+  },
+  "layouts": {
+    "navigation": "Collapsible left sidebar for global navigation. Top bar for user profile and global actions.",
+    "dashboard": "High Density Grid (grid-cols-1 md:grid-cols-4). Tight gaps (gap-4). Span summary cards 1 col, main charts 2-3 cols.",
+    "tables": "Tables are back: use dense tables with sticky headers for Invoices, Customers, Credit Logs.",
+    "forms": "Use multi-column layouts for wide forms (Customer creation). For invoices, use a clear Line Items table with dynamic add/remove."
+  },
+  "motion": {
+    "interactions": "Hover states must explicitly set text and background color. Slight lift (-translate-y-1) for actionable cards.",
+    "page_transitions": "Staggered fade-in for table rows or dashboard widgets using framer-motion."
+  },
+  "components": {
+    "ui_library": "shadcn/ui",
+    "specific_instructions": {
+      "cards": "Go cardless where possible, or use flat rectangular shapes with 1px border. Strip out default Shadcn shadows.",
+      "tables": "Must use tabular numbers. Align financial columns right. Add hover state per row. Include pagination.",
+      "forms": "Never use native <input>. Heavily customize Shadcn Form components.",
+      "date_picker": "Shadcn Calendar.",
+      "toasts": "sonner (located in /app/src/components/ui/sonner.jsx or .js depending on install)",
+      "badges": "Use sharp or slightly rounded badges for statuses (Draft, Sent, Paid, Overdue)."
+    }
+  },
+  "icons": {
+    "library": "@phosphor-icons/react",
+    "installation": "yarn add @phosphor-icons/react",
+    "style": "Duotone or Regular weight. Keep sizes consistent (18px - 20px). Do not use Emojis as icons."
+  },
+  "image_urls": [
+    {
+      "url": "https://images.unsplash.com/photo-1498262257252-c282316270bc?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMGdlb21ldHJpYyUyMGFyY2hpdGVjdHVyZSUyMG1pbmltYWx8ZW58MHx8fHwxNzg3NDExMjM1fDA&ixlib=rb-4.1.0&q=85",
+      "category": "Auth Screen Side Image",
+      "description": "Curved white architectural ribs creating a rhythmic pattern. Use as the right-side visual on a 50/50 split login screen."
+    }
+  ],
+  "accessibility": {
+    "contrast": "Ensure APCA standards or WCAG AA (4.5:1 for normal text). Focus states must have higher contrast.",
+    "testing": "CRITICAL: All interactive and key informational elements MUST include a data-testid attribute (e.g., data-testid='login-button', data-testid='invoice-total')."
+  },
+  "instructions_to_main_agent": [
+    "Prioritize 'calm density'. The application is data-heavy (invoices, credits, payments). Use space efficiently without feeling cluttered.",
+    "Implement dynamic form fields for Invoice and Quotation line items.",
+    "Provide PDF generation/print styling capability for Invoices and Quotations. Design the invoice view to look print-ready.",
+    "Ensure global search functions across the dense datasets.",
+    "Do NOT use complete transparent backgrounds for any surfaces with content underneath.",
+    "Always add explicit hover states for every interactive element.",
+    "Remember the app name is 'SANJU ANIMATIONS IT SOLUTIONS' and currency is INR (₹). Use proper formatting (e.g., ₹ 1,50,000).",
+    "For the Profit Overview module, use Recharts to compare sales vs credit purchase cost.",
+    "You have .js files not .tsx file, so write components in JavaScript (.js or .jsx) with prop-types if necessary, instead of TypeScript.",
+    "Create a Services catalog logic with default prices and descriptions."
+  ],
+  "universal_guidelines_for_main_agent": [
+    "You tend to converge toward generic outputs. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur) selectively.",
+    "You MUST NOT apply universal transition (transition: all). Always add transitions for specific interactive elements.",
+    "You MUST NOT center align the app container (.App { text-align: center; }).",
+    "Always use modern button styles (sharp or rounded-md) with interaction animations.",
+    "NEVER use AI assistant Emoji characters for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, entrance animations.",
+    "Prioritize using pre-existing components from src/components/ui. Check them before building from scratch.",
+    "All interactive and key informational elements MUST include a data-testid attribute to facilitate robust automated testing."
+  ]
+}

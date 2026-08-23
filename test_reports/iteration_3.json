@@ -1,0 +1,44 @@
+{
+  "summary": "Iteration 3 - Full testing of the new Bank Statement Analyzer module (CSV/XLSX/PDF upload + AI categorization + recommendations + history + delete). Backend: added new pytest file /app/backend/tests/test_statements.py with 8 tests (list, auth, unsupported-ext rejection, CSV upload+analysis, list-contains-uploaded, XLSX upload+analysis, PDF upload+analysis, delete+404) - ALL 8 PASS. Regression /app/backend/tests/backend_test.py 22 tests still PASS. Frontend: full Playwright flow - login -> sidebar nav (data-testid=nav-link-statement-analyzer) -> upload CSV via file input -> synchronous LLM analysis (~10-20s) -> auto-navigation to /statement-analyzer/:id -> detail page renders total_income=₹43,000, total_expense=₹66,990, net=₹-23,990 with correct color styling, AI Summary (426 chars), Spending-by-Category pie chart with 9 categories (SVG rendered), 6 AI recommendations, transactions table (9 rows) with credit(green)/debit(red) styling + category badges. Search filter (query 'GST') correctly narrows to 1 row. History delete via delete-statement-{id} removes the row. Unsupported .txt upload shows a toast (no navigation). Regression: /dashboard and /services load without error overlays.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/statements/upload (tabular parser)", "issue": "extract_transactions_from_tabular uses pd.to_datetime(dayfirst=True) which mis-parses unambiguous ISO dates like '2025-11-01' as '2025-01-11' (day=11, month=01). Visible in UI as 'Period: 2025-01-11 -> 2025-12-11' for a CSV whose dates were Nov 1-25. Recommend detecting format or falling back to dayfirst=False for ISO YYYY-MM-DD strings."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "StatementDetail - Spending by Category chart", "issues": ["When there are many categories (9 in test), the recharts <Legend> occupies a lot of vertical space and pushes the pie itself below the initial viewport fold on 1600x1000; the pie still renders (SVG confirmed) but the legend-first stacking looks like the chart is missing at a glance. Consider legend layout='vertical' on the right, or a fixed pie size + scrollable legend."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_statements.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_statements.xml"
+  ],
+  "action_items": [
+    "Optional: fix date-parsing in statement_analysis.extract_transactions_from_tabular - use pd.to_datetime without dayfirst=True for ISO YYYY-MM-DD inputs, or auto-detect (try ISO first, fallback dayfirst) so period_start/period_end are shown correctly.",
+    "Optional: tweak Spending-by-Category chart layout so the pie is visible above the legend on standard viewports."
+  ],
+  "critical_code_review_comments": [
+    "routes/statements.py: upload endpoint is fully synchronous - reads file -> puts to object storage -> calls LLM -> writes result. If the LLM call takes 20s the HTTP request holds that long; acceptable for freelancer scale but worth flagging (frontend correctly shows Analyzing... state during this).",
+    "routes/statements.py: on LLM failure the record is left status='failed' with error_message but the raw uploaded file has already been stored - orphaned object left in storage bucket. Consider cleanup on failure or a scheduled purge.",
+    "statement_analysis.py: LLM response parsing already tolerates code-fenced JSON and extracts the first {..} block - good defensive coding.",
+    "BankStatement model correctly excludes any customer_id/invoice_id linkage - confirms the standalone requirement.",
+    "storage.py: init_storage() memoises _storage_key module-level but there's no re-init on 401 from the storage service - if the key expires, all subsequent uploads will fail until process restart. Minor.",
+    "statement_analysis.py get_text without `sort=True` may yield transactions in reading order rather than tabular order for multi-column PDFs - acceptable, LLM tolerates it."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_statements.py (new)",
+    "/app/test_reports/iteration_3.json (new)"
+  ],
+  "success_rate": {"backend": "100% (30/30 pytest: 22 regression + 8 new statements)", "frontend": "100% of tested flows (nav, upload CSV, analysis render, search, delete, unsupported-file toast, dashboard/services regression)"},
+  "test_credentials": "admin@sanjuanimations.com / Sanju@2026 (verified working)",
+  "seed_data_creation": "All statements created during pytest were deleted at teardown. UI-uploaded statement was deleted via the delete-statement-{id} button during the frontend test. bank_statements collection should be clean.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Run: `python -m pytest backend/tests/ -v` from /app - expect 30 passing. Key data-testids for statement analyzer: nav-link-statement-analyzer, statement-analyzer-page, statement-upload-dropzone, statement-file-input, statement-row-{id}, delete-statement-{id}, statement-detail-page, statement-total-income/expense/net, statement-summary-text, statement-category-chart, statement-recommendations, statement-transaction-search, statement-txn-row-{i}, statement-filename. LLM calls take 10-25s - wait_for_url on '/statement-analyzer/**' with 120s timeout. CSV date column: use ISO (YYYY-MM-DD) and know that dayfirst parser will swap it - see minor bug listed.",
+  "rca of the issue": "N/A - all requested items verified working. The period-range date swap is due to `pd.to_datetime(..., dayfirst=True)` on ISO strings; fix is in statement_analysis.py line 83 - either remove dayfirst=True or attempt ISO parse first with fallback."
+}

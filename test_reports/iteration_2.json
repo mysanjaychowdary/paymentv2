@@ -1,0 +1,33 @@
+{
+  "summary": "Iteration 2 testing of Sanju Animations app (bug-fix + new features). Extended pytest suite from 19 → 22 tests, all 22 PASS. Verified the useEffect 'destroy is not a function' fix on Services / QuotationView / InvoiceView (no page errors, no runtime overlay). Verified all 4 new features: (1) invoice overdue highlighting with red left banner + '(Nd late)' text + Overdue badge, (2) one-click duplicate from list creates new draft invoice and navigates to its edit page, (3) Dashboard Sales & Payments Trend chart (last 6 months, 2 lines), (4) redesigned PDF (verified content-type + %PDF magic for both quotation & invoice). Full regression of login → dashboard → CRUD → payments → credit purchases → reports → PDFs → logout confirmed working.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "InvoiceView / QuotationView with orphaned customer reference", "issue": "If a customer that an invoice or quotation references is deleted (or otherwise not found), opening that document's detail page shows a full-page 'Uncaught runtime errors' overlay from an unhandled Axios 404 (two 404s: one for the invoice/quotation fetch of the missing customer, one for a related lookup). Reproduces reliably by DELETE /api/customers/{id} then GET /api/invoices/{id_ref_that_customer} in the UI. Should be caught and rendered as an inline error / 'Customer not found' banner instead of crashing the page. NOT the useEffect bug -- this is a separate missing error boundary / try-catch.", "affected_selectors": ["InvoiceView", "QuotationView"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL: Wrap axios GET calls in InvoiceView.jsx and QuotationView.jsx with try/catch (or use axios interceptor) to gracefully handle 404 on the referenced customer or on the document itself, rather than surfacing 'Uncaught runtime errors: Request failed with status code 404' overlay. Low priority - only reachable when a referenced entity has been deleted, but user-facing when it happens."
+  ],
+  "critical_code_review_comments": [
+    "Backend routes/invoices.py list_invoices() now runs compute_invoice_status() per row and writes back overdue transitions to DB - this is O(N) writes on every list call; fine for freelancer scale but consider batching/only-when-changed guard (which the code appears to have).",
+    "Duplicate endpoint returns status=draft and paid_amount=0 correctly; verified via test_duplicate_invoice.",
+    "dashboard/trend returns array of 6 {month, sales, payments} sorted ascending - rendering ok in recharts LineChart.",
+    "PDF redesign: header band + status chip + itemized table + totals block + footer 'Thank you for your business.' + page number all render (verified content-type application/pdf and %PDF header via test_invoice_pdf/test_quotation_pdf).",
+    "Missing UI error boundary around Route content - a single unhandled axios error takes down the whole visible view. Adding a top-level ErrorBoundary + toast would improve resilience."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "100% (22/22 pytest)", "frontend": "100% of tested flows (bug fix + all 4 new features verified)"},
+  "test_credentials": "admin@sanjuanimations.com / Sanju@2026 (verified working)",
+  "seed_data_creation": "All test data created during this run was cleaned up. During the overdue test, INV-0007 (₹1,500) was created against TEST_UI_Overdue_Cust to prove overdue banner + row highlight; both were deleted at end. A separate duplicate (INV-0008/edit) was created via UI click and left in DB because it's the expected side-effect of duplication test. Please review Invoices page for any stray TEST_ data.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Run backend suite: `python -m pytest backend/tests/backend_test.py -n 0 -v` from /app. All 22 tests must pass. Auth via httpOnly cookies. Frontend URL from REACT_APP_BACKEND_URL. Key data-testids observed: nav-link-{services|invoices|quotations|dashboard|customers}, add-service-button, service-{name,price}-input, service-save-button, duplicate-invoice-{id} (per row on list), duplicate-invoice-button (on view), download-{invoice,quotation}-pdf-button, dashboard-trend-chart. Note: there are NO data-testid attributes like view-invoice-* / view-quotation-*; open detail pages by clicking the INV-NNNN / QT-NNNN link inside the table (a[href^='/invoices/'] etc).",
+  "rca of the issue": "N/A - all requested items verified as working. One tangential finding (uncaught 404 overlay when a referenced customer is missing) documented under frontend_issues.integration_issues."
+}
