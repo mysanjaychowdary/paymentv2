@@ -6,8 +6,9 @@ from typing import Optional
 
 from models import Quotation, QuotationCreate
 from auth import get_current_user
-from utils import get_next_number, compute_items_and_totals
+from utils import get_next_number, compute_items_and_totals, get_or_create_settings
 from pdf_utils import generate_quotation_pdf
+from storage import get_object
 
 router = APIRouter(prefix="/api/quotations", tags=["quotations"])
 
@@ -155,7 +156,13 @@ async def quotation_pdf(quotation_id: str, request: Request, current_user: dict 
     if not quotation:
         raise HTTPException(status_code=404, detail="Quotation not found")
     customer = await db.customers.find_one({"_id": ObjectId(quotation["customer_id"])}) or {}
-    buf = generate_quotation_pdf(quotation, customer)
+    settings = dict(await get_or_create_settings(db))
+    if settings.get("logo_path"):
+        try:
+            settings["_logo_bytes"], _ = get_object(settings["logo_path"])
+        except Exception:
+            pass
+    buf = generate_quotation_pdf(quotation, customer, settings)
     return StreamingResponse(
         buf,
         media_type="application/pdf",

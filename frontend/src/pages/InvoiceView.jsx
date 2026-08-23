@@ -23,6 +23,7 @@ export default function InvoiceView() {
   const [invoice, setInvoice] = useState(null);
   const [customer, setCustomer] = useState(null);
   const [payments, setPayments] = useState([]);
+  const [company, setCompany] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyPayment);
   const [saving, setSaving] = useState(false);
@@ -41,6 +42,7 @@ export default function InvoiceView() {
       }
       const p = await api.get("/payments", { params: { invoice_id: id } });
       setPayments(p.data);
+      api.get("/settings").then((r) => setCompany(r.data)).catch(() => {});
     } catch (err) {
       setLoadError(formatApiErrorDetail(err.response?.data?.detail) || "Invoice not found.");
     }
@@ -144,8 +146,8 @@ export default function InvoiceView() {
       <div className="print-page border border-border bg-card p-8">
         <div className="flex items-start justify-between border-b border-border pb-6">
           <div>
-            <p className="font-heading text-lg font-bold tracking-tight text-primary">SANJU ANIMATIONS IT SOLUTIONS</p>
-            <p className="text-xs text-muted-foreground">Digital Marketing &amp; Messaging Services</p>
+            <p className="font-heading text-lg font-bold tracking-tight text-primary">{company?.company_name || "Your Company"}</p>
+            {company?.tagline && <p className="text-xs text-muted-foreground">{company.tagline}</p>}
           </div>
           <div className="text-right">
             <p className="font-heading text-2xl font-bold tracking-tight">INVOICE</p>

@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { computeTotals, formatCurrency } from "@/lib/format";
 
-const emptyItem = () => ({ service_id: null, service_name: "", description: "", quantity: 1, rate: 0, discount_percent: 0, tax_percent: 0 });
+const emptyItem = () => ({ service_id: null, service_name: "", description: "", hsn_sac: "", quantity: 1, rate: 0, discount_percent: 0, tax_percent: 0 });
 
 export function LineItemsEditor({ items, onChange, services }) {
   const { items: computed, subtotal, discount_total, tax_total, total } = computeTotals(items);
@@ -21,7 +21,7 @@ export function LineItemsEditor({ items, onChange, services }) {
   const applyServicePreset = (idx, serviceId) => {
     const svc = services.find((s) => s.id === serviceId);
     if (!svc) return;
-    updateItem(idx, { service_id: svc.id, service_name: svc.name, rate: svc.default_price });
+    updateItem(idx, { service_id: svc.id, service_name: svc.name, rate: svc.default_price, hsn_sac: svc.hsn_sac || "" });
   };
 
   return (
@@ -32,6 +32,7 @@ export function LineItemsEditor({ items, onChange, services }) {
             <TableRow>
               <TableHead className="min-w-[160px]">Service</TableHead>
               <TableHead className="min-w-[160px]">Description</TableHead>
+              <TableHead className="w-24">HSN/SAC</TableHead>
               <TableHead className="w-24 text-right">Qty</TableHead>
               <TableHead className="w-28 text-right">Rate</TableHead>
               <TableHead className="w-24 text-right">Disc %</TableHead>
@@ -71,6 +72,14 @@ export function LineItemsEditor({ items, onChange, services }) {
                     placeholder="Description"
                     data-testid={`line-item-description-${idx}`}
                     onChange={(e) => updateItem(idx, { description: e.target.value })}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    value={item.hsn_sac || ""}
+                    placeholder="HSN/SAC"
+                    data-testid={`line-item-hsn-${idx}`}
+                    onChange={(e) => updateItem(idx, { hsn_sac: e.target.value })}
                   />
                 </TableCell>
                 <TableCell>
@@ -126,7 +135,7 @@ export function LineItemsEditor({ items, onChange, services }) {
             ))}
             {computed.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="py-6 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={9} className="py-6 text-center text-sm text-muted-foreground">
                   No items added yet.
                 </TableCell>
               </TableRow>

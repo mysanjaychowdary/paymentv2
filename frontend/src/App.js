@@ -20,6 +20,7 @@ import Services from "@/pages/Services";
 import Reports from "@/pages/Reports";
 import StatementAnalyzer from "@/pages/StatementAnalyzer";
 import StatementDetail from "@/pages/StatementDetail";
+import Settings from "@/pages/Settings";
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -67,6 +68,7 @@ function App() {
             <Route path="reports" element={<Reports />} />
             <Route path="statement-analyzer" element={<StatementAnalyzer />} />
             <Route path="statement-analyzer/:id" element={<StatementDetail />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>
       </BrowserRouter>

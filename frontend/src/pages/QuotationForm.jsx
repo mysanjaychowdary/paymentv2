@@ -23,13 +23,19 @@ export default function QuotationForm() {
   const [validUntil, setValidUntil] = useState(null);
   const [items, setItems] = useState([emptyItem()]);
   const [notes, setNotes] = useState("");
-  const [terms, setTerms] = useState("Payment due within 15 days of acceptance.");
+  const [terms, setTerms] = useState("");
   const [status, setStatus] = useState("draft");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     api.get("/customers").then((res) => setCustomers(res.data));
     api.get("/services").then((res) => setServices(res.data));
+    if (!isEdit) {
+      api.get("/settings").then((res) => {
+        setTerms(res.data.default_quotation_terms || "Payment due within 15 days of acceptance.");
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

@@ -20,6 +20,7 @@ from routes.credit_purchases import router as credit_purchases_router
 from routes.dashboard import router as dashboard_router
 from routes.reports import router as reports_router
 from routes.statements import router as statements_router
+from routes.settings import router as settings_router
 from storage import init_storage
 
 mongo_url = os.environ['MONGO_URL']
@@ -47,6 +48,7 @@ app.include_router(credit_purchases_router)
 app.include_router(dashboard_router)
 app.include_router(reports_router)
 app.include_router(statements_router)
+app.include_router(settings_router)
 
 app.add_middleware(
     CORSMiddleware,

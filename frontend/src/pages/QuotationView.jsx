@@ -13,6 +13,7 @@ export default function QuotationView() {
   const navigate = useNavigate();
   const [quotation, setQuotation] = useState(null);
   const [customer, setCustomer] = useState(null);
+  const [company, setCompany] = useState(null);
   const [loadError, setLoadError] = useState("");
 
   const load = async () => {
@@ -26,6 +27,7 @@ export default function QuotationView() {
       } catch (e) {
         setCustomer({ name: "Unknown customer (deleted)" });
       }
+      api.get("/settings").then((r) => setCompany(r.data)).catch(() => {});
     } catch (err) {
       setLoadError(formatApiErrorDetail(err.response?.data?.detail) || "Quotation not found.");
     }
@@ -98,8 +100,8 @@ export default function QuotationView() {
       <div className="print-page border border-border bg-card p-8">
         <div className="flex items-start justify-between border-b border-border pb-6">
           <div>
-            <p className="font-heading text-lg font-bold tracking-tight text-primary">SANJU ANIMATIONS IT SOLUTIONS</p>
-            <p className="text-xs text-muted-foreground">Digital Marketing &amp; Messaging Services</p>
+            <p className="font-heading text-lg font-bold tracking-tight text-primary">{company?.company_name || "Your Company"}</p>
+            {company?.tagline && <p className="text-xs text-muted-foreground">{company.tagline}</p>}
           </div>
           <div className="text-right">
             <p className="font-heading text-2xl font-bold tracking-tight">QUOTATION</p>

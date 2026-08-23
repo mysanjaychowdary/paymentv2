@@ -10,6 +10,7 @@ import {
   Stack,
   ChartBar,
   MagnifyingGlass,
+  GearSix,
   CaretLeft,
   CaretRight,
   SignOut,
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
   { to: "/services", label: "Services", icon: Stack },
   { to: "/reports", label: "Reports", icon: ChartBar },
   { to: "/statement-analyzer", label: "Statement Analyzer", icon: MagnifyingGlass },
+  { to: "/settings", label: "Settings", icon: GearSix },
 ];
 
 export function Sidebar() {

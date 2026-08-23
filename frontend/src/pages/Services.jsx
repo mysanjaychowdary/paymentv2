@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/format";
 
-const emptyForm = { name: "", description: "", default_price: "" };
+const emptyForm = { name: "", description: "", default_price: "", hsn_sac: "" };
 
 export default function Services() {
   const [services, setServices] = useState([]);
@@ -86,6 +86,7 @@ export default function Services() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Description</TableHead>
+              <TableHead>HSN/SAC</TableHead>
               <TableHead className="text-right">Default Price</TableHead>
               <TableHead className="w-20 text-right">Actions</TableHead>
             </TableRow>
@@ -95,6 +96,7 @@ export default function Services() {
               <TableRow key={s.id} data-testid={`service-row-${s.id}`}>
                 <TableCell className="font-medium">{s.name}</TableCell>
                 <TableCell className="text-muted-foreground">{s.description || "-"}</TableCell>
+                <TableCell className="text-muted-foreground">{s.hsn_sac || "-"}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatCurrency(s.default_price)}</TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`edit-service-${s.id}`} onClick={() => openEdit(s)}>
@@ -106,7 +108,7 @@ export default function Services() {
                 </TableCell>
               </TableRow>
             ))}
-            {services.length === 0 && <TableRow><TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">No services yet. Add your first service.</TableCell></TableRow>}
+            {services.length === 0 && <TableRow><TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">No services yet. Add your first service.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </div>
@@ -126,6 +128,10 @@ export default function Services() {
             <div className="space-y-1.5">
               <Label>Default Price (₹)</Label>
               <Input type="number" value={form.default_price} onChange={(e) => setForm({ ...form, default_price: e.target.value })} data-testid="service-price-input" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>HSN/SAC Code</Label>
+              <Input value={form.hsn_sac} onChange={(e) => setForm({ ...form, hsn_sac: e.target.value })} data-testid="service-hsn-input" />
             </div>
             <DialogFooter>
               <Button type="submit" disabled={saving} data-testid="service-save-button">{saving ? "Saving..." : "Save Service"}</Button>

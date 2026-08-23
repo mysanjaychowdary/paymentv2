@@ -72,6 +72,7 @@ class Service(BaseDocument):
     name: str
     description: Optional[str] = ""
     default_price: float = 0
+    hsn_sac: Optional[str] = ""
     created_at: datetime = Field(default_factory=now_utc)
 
 
@@ -79,6 +80,7 @@ class ServiceCreate(BaseModel):
     name: str
     description: Optional[str] = ""
     default_price: float = 0
+    hsn_sac: Optional[str] = ""
 
 
 # ---------- Line Item (embedded, shared by quotation/invoice) ----------
@@ -86,6 +88,7 @@ class LineItem(BaseModel):
     service_id: Optional[str] = None
     service_name: str
     description: Optional[str] = ""
+    hsn_sac: Optional[str] = ""
     quantity: float = 1
     rate: float = 0
     discount_percent: float = 0
@@ -203,6 +206,42 @@ class CreditPurchaseCreate(BaseModel):
     reference_number: Optional[str] = ""
     campaign_name: Optional[str] = ""
     notes: Optional[str] = ""
+
+
+# ---------- Company Settings (singleton) ----------
+class CompanySettings(BaseDocument):
+    company_name: str = "Your Company"
+    tagline: Optional[str] = ""
+    address: Optional[str] = ""
+    phone: Optional[str] = ""
+    email: Optional[str] = ""
+    gst_number: Optional[str] = ""
+    logo_path: Optional[str] = None
+    logo_content_type: Optional[str] = None
+    bank_name: Optional[str] = ""
+    account_name: Optional[str] = ""
+    account_number: Optional[str] = ""
+    ifsc_code: Optional[str] = ""
+    branch: Optional[str] = ""
+    default_quotation_terms: Optional[str] = ""
+    default_invoice_payment_terms: Optional[str] = ""
+    updated_at: datetime = Field(default_factory=now_utc)
+
+
+class CompanySettingsUpdate(BaseModel):
+    company_name: Optional[str] = None
+    tagline: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    gst_number: Optional[str] = None
+    bank_name: Optional[str] = None
+    account_name: Optional[str] = None
+    account_number: Optional[str] = None
+    ifsc_code: Optional[str] = None
+    branch: Optional[str] = None
+    default_quotation_terms: Optional[str] = None
+    default_invoice_payment_terms: Optional[str] = None
 
 
 # ---------- Bank Statement Analyzer ----------

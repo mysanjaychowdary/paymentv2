@@ -1,38 +1,25 @@
+import mimetypes
 import os
-import requests
+from pathlib import Path
 
-STORAGE_BASE = (os.environ.get("INTEGRATION_PROXY_URL") or "").strip() or "https://integrations.emergentagent.com"
-STORAGE_URL = STORAGE_BASE.rstrip("/") + "/objstore/api/v1/storage"
-APP_NAME = "sanju-animations-biz-manager"
-
-_storage_key = None
+STORAGE_ROOT = Path(os.environ.get("LOCAL_STORAGE_DIR") or Path(__file__).parent / "uploads")
 
 
 def init_storage(force: bool = False) -> str:
-    global _storage_key
-    if _storage_key and not force:
-        return _storage_key
-    emergent_key = os.environ["EMERGENT_LLM_KEY"]
-    resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": emergent_key}, timeout=30)
-    resp.raise_for_status()
-    _storage_key = resp.json()["storage_key"]
-    return _storage_key
+    STORAGE_ROOT.mkdir(parents=True, exist_ok=True)
+    return str(STORAGE_ROOT)
 
 
 def put_object(path: str, data: bytes, content_type: str) -> dict:
-    key = init_storage()
-    resp = requests.put(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key, "Content-Type": content_type},
-        data=data,
-        timeout=120,
-    )
-    resp.raise_for_status()
-    return resp.json()
+    init_storage()
+    file_path = STORAGE_ROOT / path
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    file_path.write_bytes(data)
+    return {"path": path}
 
 
 def get_object(path: str) -> tuple:
-    key = init_storage()
-    resp = requests.get(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key}, timeout=60)
-    resp.raise_for_status()
-    return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
+    init_storage()
+    file_path = STORAGE_ROOT / path
+    content_type = mimetypes.guess_type(str(file_path))[0] or "application/octet-stream"
+    return file_path.read_bytes(), content_type

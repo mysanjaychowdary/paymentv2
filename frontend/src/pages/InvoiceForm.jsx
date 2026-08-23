@@ -25,13 +25,19 @@ export default function InvoiceForm() {
   const [dueDate, setDueDate] = useState(null);
   const [items, setItems] = useState([emptyItem()]);
   const [notes, setNotes] = useState("");
-  const [paymentTerms, setPaymentTerms] = useState("Due within 15 days of invoice date.");
+  const [paymentTerms, setPaymentTerms] = useState("");
   const [status, setStatus] = useState("draft");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     api.get("/customers").then((res) => setCustomers(res.data));
     api.get("/services").then((res) => setServices(res.data));
+    if (!isEdit) {
+      api.get("/settings").then((res) => {
+        setPaymentTerms(res.data.default_invoice_payment_terms || "Due within 15 days of invoice date.");
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

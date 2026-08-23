@@ -16,7 +16,9 @@ Solo freelancer (Sanju Animations IT Solutions) selling WhatsApp/SMS/marketing s
 - Frontend: React + Tailwind + shadcn/ui, orange-and-white SaaS theme (#EA580C), Sora/Inter fonts
 - PDF generation: reportlab (invoices & quotations), downloaded via authenticated blob fetch, matches the orange brand theme
 - Statement Analyzer AI: OpenRouter free-tier model (via OpenAI-compatible client), configured with `OPENROUTER_API_KEY` in backend/.env
-- Collections: users, customers, services, quotations, invoices, payments, credit_purchases, counters, login_attempts
+- Collections: users, customers, services, quotations, invoices, payments, credit_purchases, counters, login_attempts, settings (singleton company profile)
+- Company Settings page (logo upload, name/tagline/address/phone/email/GSTIN, bank details, default quotation/invoice terms) — feeds the PDF header, "Payment Details" section and new-document term defaults; logo stored locally via storage.py, referenced by `logo_path`
+- Invoice/quotation PDFs redesigned to match a reference "hexagon logo + orange header + BILL TO + HSN/SAC item table + CGST/SGST totals + Amount in Words + orange footer band" template; LineItem/Service gained optional `hsn_sac` field
 
 ## Core Requirements (static)
 - Customer CRUD + detail page with sales/paid/due/credit summary + tabbed history (invoices/quotations/payments/credit purchases)

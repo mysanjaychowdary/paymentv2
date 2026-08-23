@@ -59,6 +59,16 @@ def compute_invoice_status(current_status: str, total: float, paid_amount: float
     return "sent", due_amount
 
 
+async def get_or_create_settings(db) -> dict:
+    from models import CompanySettings
+    doc = await db.settings.find_one({})
+    if not doc:
+        settings = CompanySettings()
+        result = await db.settings.insert_one(settings.to_mongo())
+        doc = await db.settings.find_one({"_id": result.inserted_id})
+    return doc
+
+
 async def recalc_invoice(db, invoice_id):
     from bson import ObjectId
     invoice = await db.invoices.find_one({"_id": ObjectId(invoice_id)})
