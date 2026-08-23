@@ -9,7 +9,7 @@ from storage import put_object, get_object
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
-LOGO_MIME = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp", "svg": "image/svg+xml"}
+LOGO_MIME = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp"}
 
 
 @router.get("")
@@ -36,7 +36,7 @@ async def upload_logo(request: Request, file: UploadFile = File(...), current_us
     filename = file.filename or "logo"
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     if ext not in LOGO_MIME:
-        raise HTTPException(status_code=400, detail="Unsupported logo format. Use PNG, JPG, WEBP or SVG.")
+        raise HTTPException(status_code=400, detail="Unsupported logo format. Use PNG, JPG or WEBP (SVG can't be embedded in PDFs).")
     data = await file.read()
     doc = await get_or_create_settings(db)
     storage_path = f"sanju-animations-biz-manager/settings/logo.{ext}"

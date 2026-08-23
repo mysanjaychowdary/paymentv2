@@ -1,38 +1,53 @@
 import io
 import math
+import os
+import reportlab
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_RIGHT, TA_CENTER
 
 BRAND_COLOR = colors.HexColor("#EA580C")
-BRAND_DARK = colors.HexColor("#C2410C")
 INK = colors.HexColor("#18181B")
 MUTED = colors.HexColor("#71717A")
-LIGHT_BORDER = colors.HexColor("#E7E1DB")
+LIGHT_BORDER = colors.HexColor("#E2D9CE")
 SURFACE = colors.HexColor("#FFF7ED")
 SUCCESS = colors.HexColor("#16A34A")
-WARNING = colors.HexColor("#D97706")
-
-STATUS_COLORS = {
-    "draft": colors.HexColor("#71717A"),
-    "sent": colors.HexColor("#2563EB"),
-    "accepted": SUCCESS,
-    "paid": SUCCESS,
-    "rejected": colors.HexColor("#DC2626"),
-    "cancelled": colors.HexColor("#71717A"),
-    "expired": colors.HexColor("#71717A"),
-    "partially_paid": WARNING,
-    "overdue": colors.HexColor("#DC2626"),
-}
 
 PAGE_WIDTH, PAGE_HEIGHT = A4
 MARGIN = 18 * mm
-HEADER_HEIGHT = 30 * mm
+HEADER_HEIGHT = 34 * mm
 FOOTER_HEIGHT = 13 * mm
+TOP_BAR_HEIGHT = 2.4 * mm
+
+# ---------- Fonts ----------
+# Embed a clean humanist sans (Bitstream Vera, bundled with reportlab) so the PDF
+# renders identically everywhere instead of falling back to whatever "Helvetica"
+# maps to on the viewer's system. Falls back to the built-in Helvetica if the
+# font files aren't available in this reportlab install.
+FONT_REGULAR = "Helvetica"
+FONT_BOLD = "Helvetica-Bold"
+
+
+def _register_fonts():
+    global FONT_REGULAR, FONT_BOLD
+    try:
+        font_dir = os.path.join(os.path.dirname(reportlab.__file__), "fonts")
+        pdfmetrics.registerFont(TTFont("CorpSans", os.path.join(font_dir, "Vera.ttf")))
+        pdfmetrics.registerFont(TTFont("CorpSans-Bold", os.path.join(font_dir, "VeraBd.ttf")))
+        pdfmetrics.registerFontFamily("CorpSans", normal="CorpSans", bold="CorpSans-Bold")
+        FONT_REGULAR = "CorpSans"
+        FONT_BOLD = "CorpSans-Bold"
+    except Exception:
+        pass
+
+
+_register_fonts()
 
 
 def fmt(v):
@@ -93,31 +108,58 @@ def amount_in_words(amount):
 
 def _styles():
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name="SmallMuted", fontSize=9, textColor=MUTED, leading=13))
-    styles.add(ParagraphStyle(name="Normal9", fontSize=9.5, textColor=INK, leading=14))
-    styles.add(ParagraphStyle(name="Normal9Right", fontSize=9.5, textColor=INK, leading=14, alignment=TA_RIGHT))
-    styles.add(ParagraphStyle(name="SectionLabel", fontSize=8.5, textColor=BRAND_COLOR, leading=11, spaceAfter=2, fontName="Helvetica-Bold"))
-    styles.add(ParagraphStyle(name="BoldName", fontSize=11, textColor=INK, leading=14, fontName="Helvetica-Bold"))
-    styles.add(ParagraphStyle(name="CenterMuted", fontSize=8, textColor=MUTED, leading=11, alignment=TA_CENTER))
+    styles.add(ParagraphStyle(name="SmallMuted", fontName=FONT_REGULAR, fontSize=9, textColor=MUTED, leading=13))
+    styles.add(ParagraphStyle(name="Normal9", fontName=FONT_REGULAR, fontSize=9.5, textColor=INK, leading=14))
+    styles.add(ParagraphStyle(name="Normal9Right", fontName=FONT_REGULAR, fontSize=9.5, textColor=INK, leading=14, alignment=TA_RIGHT))
+    styles.add(ParagraphStyle(name="SectionLabel", fontName=FONT_BOLD, fontSize=8.5, textColor=BRAND_COLOR, leading=11, spaceAfter=2))
+    styles.add(ParagraphStyle(name="BoldName", fontName=FONT_BOLD, fontSize=11, textColor=INK, leading=14))
+    styles.add(ParagraphStyle(name="CenterMuted", fontName=FONT_REGULAR, fontSize=8, textColor=MUTED, leading=11, alignment=TA_CENTER))
     return styles
 
 
-def _draw_logo_hexagon(canvas, x, y, size, initial):
-    """Vector fallback logo (orange hexagon) used when no custom logo has been uploaded."""
-    cx, cy = x + size / 2, y + size / 2
-    r = size / 2
-    points = [(cx + r * math.cos(math.pi / 180 * (60 * i - 30)), cy + r * math.sin(math.pi / 180 * (60 * i - 30))) for i in range(6)]
-    canvas.setStrokeColor(BRAND_COLOR)
-    canvas.setLineWidth(2.2)
+def _hexagon_points(cx, cy, r):
+    return [(cx + r * math.cos(math.pi / 180 * (60 * i - 30)), cy + r * math.sin(math.pi / 180 * (60 * i - 30))) for i in range(6)]
+
+
+def _hexagon_path(canvas, cx, cy, r):
+    points = _hexagon_points(cx, cy, r)
     path = canvas.beginPath()
     path.moveTo(*points[0])
     for p in points[1:]:
         path.lineTo(*p)
     path.close()
-    canvas.drawPath(path, stroke=1, fill=0)
+    return path
+
+
+def _draw_logo_hexagon(canvas, x, y, size, initial):
+    """Vector fallback logo (orange hexagon) used when no custom logo has been uploaded."""
+    cx, cy = x + size / 2, y + size / 2
+    canvas.setStrokeColor(BRAND_COLOR)
+    canvas.setLineWidth(2.2)
+    canvas.drawPath(_hexagon_path(canvas, cx, cy, size / 2), stroke=1, fill=0)
     canvas.setFillColor(BRAND_COLOR)
-    canvas.setFont("Helvetica-Bold", size * 0.42)
+    canvas.setFont(FONT_BOLD, size * 0.42)
     canvas.drawCentredString(cx, cy - size * 0.15, (initial or "Y")[0].upper())
+
+
+def _draw_background(canvas):
+    """Subtle corporate letterhead treatment: top accent bar, tinted header band,
+    faint watermark hexagon — all painted first so flowable content sits on top."""
+    canvas.setFillColor(BRAND_COLOR)
+    canvas.rect(0, PAGE_HEIGHT - TOP_BAR_HEIGHT, PAGE_WIDTH, TOP_BAR_HEIGHT, stroke=0, fill=1)
+
+    canvas.setFillColor(SURFACE)
+    canvas.rect(0, PAGE_HEIGHT - TOP_BAR_HEIGHT - HEADER_HEIGHT, PAGE_WIDTH, HEADER_HEIGHT, stroke=0, fill=1)
+
+    try:
+        canvas.saveState()
+        canvas.setStrokeColor(BRAND_COLOR)
+        canvas.setStrokeAlpha(0.05)
+        canvas.setLineWidth(16)
+        canvas.drawPath(_hexagon_path(canvas, PAGE_WIDTH - 6 * mm, FOOTER_HEIGHT + 26 * mm, 46 * mm), stroke=1, fill=0)
+        canvas.restoreState()
+    except Exception:
+        pass
 
 
 def _make_header_footer(title, settings):
@@ -127,8 +169,10 @@ def _make_header_footer(title, settings):
 
     def draw(canvas, doc):
         canvas.saveState()
+        _draw_background(canvas)
+
         top = PAGE_HEIGHT - MARGIN
-        logo_size = 15 * mm
+        logo_size = 17 * mm
         logo_x, logo_y = MARGIN, top - logo_size
 
         if logo_bytes:
@@ -143,56 +187,39 @@ def _make_header_footer(title, settings):
 
         text_x = logo_x + logo_size + 5 * mm
         canvas.setFillColor(INK)
-        canvas.setFont("Helvetica-Bold", 15)
-        canvas.drawString(text_x, top - 6 * mm, company_name)
+        canvas.setFont(FONT_BOLD, 15)
+        canvas.drawString(text_x, top - 6.5 * mm, company_name)
         if tagline:
             canvas.setFillColor(MUTED)
-            canvas.setFont("Helvetica", 9)
-            canvas.drawString(text_x, top - 11.5 * mm, tagline)
+            canvas.setFont(FONT_REGULAR, 9)
+            canvas.drawString(text_x, top - 12 * mm, tagline)
 
         canvas.setFillColor(BRAND_COLOR)
-        canvas.setFont("Helvetica-Bold", 28)
-        canvas.drawRightString(PAGE_WIDTH - MARGIN, top - 9 * mm, title)
+        canvas.setFont(FONT_BOLD, 28)
+        canvas.drawRightString(PAGE_WIDTH - MARGIN, top - 9.5 * mm, title)
 
         # footer band
         canvas.setFillColor(BRAND_COLOR)
         canvas.rect(0, 0, PAGE_WIDTH, FOOTER_HEIGHT, stroke=0, fill=1)
         canvas.setFillColor(colors.white)
-        canvas.setFont("Helvetica-Bold", 10)
+        canvas.setFont(FONT_BOLD, 10)
         canvas.drawCentredString(PAGE_WIDTH / 2, FOOTER_HEIGHT / 2 - 3, "Thank you for your business!")
-        canvas.setFont("Helvetica", 7)
-        canvas.setFillColor(colors.white)
+        canvas.setFont(FONT_REGULAR, 7)
         canvas.drawRightString(PAGE_WIDTH - MARGIN, FOOTER_HEIGHT / 2 - 3, f"Page {doc.page}")
         canvas.restoreState()
     return draw
 
 
-def _status_chip_table(status):
-    label = status.replace("_", " ").title()
-    chip_color = STATUS_COLORS.get(status, MUTED)
-    t = Table([[label]], colWidths=[28 * mm], rowHeights=[6 * mm])
-    t.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), chip_color),
-        ("TEXTCOLOR", (0, 0), (-1, -1), colors.white),
-        ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
-        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-    ]))
-    t.hAlign = "RIGHT"
-    return t
-
-
 def _build_doc(
     title, doc_number, doc_date, extra_date_label, extra_date_value,
     customer, items, subtotal, discount_total, tax_total, total, notes,
-    terms_or_payment_terms, terms_label, status, settings,
+    terms_or_payment_terms, terms_label, settings,
     paid_amount=None, due_amount=None, payment_details=None, digital_note=None,
 ):
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
         buf, pagesize=A4,
-        topMargin=HEADER_HEIGHT + 8 * mm, bottomMargin=FOOTER_HEIGHT + 8 * mm,
+        topMargin=HEADER_HEIGHT + TOP_BAR_HEIGHT + 6 * mm, bottomMargin=FOOTER_HEIGHT + 8 * mm,
         leftMargin=MARGIN, rightMargin=MARGIN,
     )
     styles = _styles()
@@ -215,8 +242,6 @@ def _build_doc(
     meta_right.append(Paragraph(f"<font color='#71717A'>Date</font>&nbsp;&nbsp;<b>{doc_date}</b>", styles["Normal9Right"]))
     if extra_date_value:
         meta_right.append(Paragraph(f"<font color='#71717A'>{extra_date_label}</font>&nbsp;&nbsp;<b>{extra_date_value}</b>", styles["Normal9Right"]))
-    meta_right.append(Spacer(1, 2.5 * mm))
-    meta_right.append(_status_chip_table(status))
 
     top_table = Table([[company_left, meta_right]], colWidths=[100 * mm, 74 * mm])
     top_table.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
@@ -260,16 +285,20 @@ def _build_doc(
     item_table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), BRAND_COLOR),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, 0), 8),
+        ("FONTNAME", (0, 0), (-1, 0), FONT_BOLD),
+        ("FONTNAME", (0, 1), (-1, -1), FONT_REGULAR),
+        ("FONTSIZE", (0, 0), (-1, 0), 8.5),
         ("FONTSIZE", (0, 1), (-1, -1), 9.5),
         ("ALIGN", (0, 0), (0, -1), "CENTER"),
         ("ALIGN", (3, 0), (-1, -1), "RIGHT"),
-        ("LINEBELOW", (0, 1), (-1, -1), 0.5, LIGHT_BORDER),
+        ("GRID", (0, 0), (-1, -1), 0.5, LIGHT_BORDER),
+        ("BOX", (0, 0), (-1, -1), 0.9, INK),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, SURFACE]),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("TOPPADDING", (0, 0), (-1, -1), 7),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
         ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
     ]))
     elements.append(item_table)
     elements.append(Spacer(1, 7 * mm))
@@ -301,18 +330,21 @@ def _build_doc(
 
     totals_table = Table(totals_rows, colWidths=[40 * mm, 34 * mm])
     style_cmds = [
+        ("FONTNAME", (0, 0), (-1, -1), FONT_REGULAR),
         ("FONTSIZE", (0, 0), (-1, -1), 9),
         ("TEXTCOLOR", (0, 0), (0, total_row_idx - 1), MUTED),
         ("TEXTCOLOR", (1, 0), (1, total_row_idx - 1), INK),
         ("ALIGN", (1, 0), (1, -1), "RIGHT"),
         ("TOPPADDING", (0, 0), (-1, -1), 5),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        ("LEFTPADDING", (0, 0), (-1, -1), 6),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("LEFTPADDING", (0, 0), (-1, -1), 7),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+        ("BOX", (0, 0), (-1, -1), 0.8, LIGHT_BORDER),
+        ("LINEAFTER", (0, 0), (0, -1), 0.5, LIGHT_BORDER),
         ("LINEBELOW", (0, 0), (-1, total_row_idx - 1), 0.4, LIGHT_BORDER),
         ("BACKGROUND", (0, total_row_idx), (-1, total_row_idx), BRAND_COLOR),
         ("TEXTCOLOR", (0, total_row_idx), (-1, total_row_idx), colors.white),
-        ("FONTNAME", (0, total_row_idx), (-1, total_row_idx), "Helvetica-Bold"),
+        ("FONTNAME", (0, total_row_idx), (-1, total_row_idx), FONT_BOLD),
         ("FONTSIZE", (0, total_row_idx), (-1, total_row_idx), 10.5),
     ]
     if extra_rows:
@@ -320,7 +352,7 @@ def _build_doc(
             ("TEXTCOLOR", (0, total_row_idx + 1), (-1, total_row_idx + 1), SUCCESS),
             ("TEXTCOLOR", (0, total_row_idx + 2), (-1, total_row_idx + 2),
              colors.HexColor("#DC2626") if due_amount and due_amount > 0 else SUCCESS),
-            ("FONTNAME", (0, total_row_idx + 1), (-1, total_row_idx + 2), "Helvetica-Bold"),
+            ("FONTNAME", (0, total_row_idx + 1), (-1, total_row_idx + 2), FONT_BOLD),
         ]
     totals_table.setStyle(TableStyle(style_cmds))
     totals_table.hAlign = "RIGHT"
@@ -384,7 +416,6 @@ def generate_quotation_pdf(quotation, customer, settings=None):
         notes=quotation.get("notes", ""),
         terms_or_payment_terms=quotation.get("terms", ""),
         terms_label="Terms & Conditions",
-        status=quotation.get("status", "draft"),
         settings=settings,
         digital_note="This is a digitally generated quotation and does not require a signature.",
     )
@@ -419,7 +450,6 @@ def generate_invoice_pdf(invoice, customer, settings=None):
         notes=invoice.get("notes", ""),
         terms_or_payment_terms=invoice.get("payment_terms", ""),
         terms_label="Payment Terms",
-        status=invoice.get("status", "draft"),
         settings=settings,
         paid_amount=invoice.get("paid_amount", 0),
         due_amount=invoice.get("due_amount", 0),

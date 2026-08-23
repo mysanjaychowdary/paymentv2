@@ -76,8 +76,8 @@ export default function Settings() {
 
   const handleLogoFile = async (file) => {
     if (!file) return;
-    if (!["image/png", "image/jpeg", "image/webp", "image/svg+xml"].includes(file.type)) {
-      toast.error("Please upload a PNG, JPG, WEBP or SVG image.");
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      toast.error("Please upload a PNG, JPG or WEBP image (SVG can't be embedded in PDFs).");
       return;
     }
     setUploadingLogo(true);
@@ -139,7 +139,7 @@ export default function Settings() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                accept="image/png,image/jpeg,image/webp"
                 className="hidden"
                 data-testid="settings-logo-input"
                 onChange={(e) => handleLogoFile(e.target.files?.[0])}
@@ -162,7 +162,7 @@ export default function Settings() {
                   </Button>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">PNG, JPG, WEBP or SVG. Shown on invoice &amp; quotation PDFs.</p>
+              <p className="text-xs text-muted-foreground">PNG, JPG or WEBP. Appears in the top-left of every invoice &amp; quotation PDF.</p>
             </div>
           </div>
 
