@@ -180,6 +180,7 @@ def _status_chip_table(status):
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
     ]))
     t.hAlign = "RIGHT"
+    t._argW = [31 * mm] 
     return t
 
 
