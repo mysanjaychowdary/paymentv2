@@ -23,26 +23,35 @@ PAGE_WIDTH, PAGE_HEIGHT = A4
 MARGIN = 18 * mm
 HEADER_HEIGHT = 34 * mm
 FOOTER_HEIGHT = 13 * mm
-TOP_BAR_HEIGHT = 2.4 * mm
 
 # ---------- Fonts ----------
-# Embed a clean humanist sans (Bitstream Vera, bundled with reportlab) so the PDF
-# renders identically everywhere instead of falling back to whatever "Helvetica"
-# maps to on the viewer's system. Falls back to the built-in Helvetica if the
-# font files aren't available in this reportlab install.
+# Embed Poppins (bundled as static assets in backend/fonts, SIL Open Font License)
+# so PDFs render with the same geometric-sans look everywhere, instead of
+# whatever "Helvetica" maps to on the viewer's system. Falls back to reportlab's
+# bundled Vera, then to built-in Helvetica, if the font files are missing.
 FONT_REGULAR = "Helvetica"
 FONT_BOLD = "Helvetica-Bold"
+FONT_SEMIBOLD = "Helvetica-Bold"
 
 
 def _register_fonts():
-    global FONT_REGULAR, FONT_BOLD
+    global FONT_REGULAR, FONT_BOLD, FONT_SEMIBOLD
+    local_dir = os.path.join(os.path.dirname(__file__), "fonts")
+    try:
+        pdfmetrics.registerFont(TTFont("Poppins", os.path.join(local_dir, "Poppins-Regular.ttf")))
+        pdfmetrics.registerFont(TTFont("Poppins-Bold", os.path.join(local_dir, "Poppins-Bold.ttf")))
+        pdfmetrics.registerFont(TTFont("Poppins-SemiBold", os.path.join(local_dir, "Poppins-SemiBold.ttf")))
+        pdfmetrics.registerFontFamily("Poppins", normal="Poppins", bold="Poppins-Bold")
+        FONT_REGULAR, FONT_BOLD, FONT_SEMIBOLD = "Poppins", "Poppins-Bold", "Poppins-SemiBold"
+        return
+    except Exception:
+        pass
     try:
         font_dir = os.path.join(os.path.dirname(reportlab.__file__), "fonts")
         pdfmetrics.registerFont(TTFont("CorpSans", os.path.join(font_dir, "Vera.ttf")))
         pdfmetrics.registerFont(TTFont("CorpSans-Bold", os.path.join(font_dir, "VeraBd.ttf")))
         pdfmetrics.registerFontFamily("CorpSans", normal="CorpSans", bold="CorpSans-Bold")
-        FONT_REGULAR = "CorpSans"
-        FONT_BOLD = "CorpSans-Bold"
+        FONT_REGULAR, FONT_BOLD, FONT_SEMIBOLD = "CorpSans", "CorpSans-Bold", "CorpSans-Bold"
     except Exception:
         pass
 
@@ -143,14 +152,8 @@ def _draw_logo_hexagon(canvas, x, y, size, initial):
 
 
 def _draw_background(canvas):
-    """Subtle corporate letterhead treatment: top accent bar, tinted header band,
-    faint watermark hexagon — all painted first so flowable content sits on top."""
-    canvas.setFillColor(BRAND_COLOR)
-    canvas.rect(0, PAGE_HEIGHT - TOP_BAR_HEIGHT, PAGE_WIDTH, TOP_BAR_HEIGHT, stroke=0, fill=1)
-
-    canvas.setFillColor(SURFACE)
-    canvas.rect(0, PAGE_HEIGHT - TOP_BAR_HEIGHT - HEADER_HEIGHT, PAGE_WIDTH, HEADER_HEIGHT, stroke=0, fill=1)
-
+    """Faint corporate watermark on plain white — painted first so flowable
+    content and the (background-free) header sit cleanly on top."""
     try:
         canvas.saveState()
         canvas.setStrokeColor(BRAND_COLOR)
@@ -219,7 +222,7 @@ def _build_doc(
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
         buf, pagesize=A4,
-        topMargin=HEADER_HEIGHT + TOP_BAR_HEIGHT + 6 * mm, bottomMargin=FOOTER_HEIGHT + 8 * mm,
+        topMargin=HEADER_HEIGHT + 6 * mm, bottomMargin=FOOTER_HEIGHT + 8 * mm,
         leftMargin=MARGIN, rightMargin=MARGIN,
     )
     styles = _styles()
@@ -285,18 +288,16 @@ def _build_doc(
     item_table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), BRAND_COLOR),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTNAME", (0, 0), (-1, 0), FONT_BOLD),
+        ("FONTNAME", (0, 0), (-1, 0), FONT_SEMIBOLD),
         ("FONTNAME", (0, 1), (-1, -1), FONT_REGULAR),
         ("FONTSIZE", (0, 0), (-1, 0), 8.5),
         ("FONTSIZE", (0, 1), (-1, -1), 9.5),
         ("ALIGN", (0, 0), (0, -1), "CENTER"),
         ("ALIGN", (3, 0), (-1, -1), "RIGHT"),
-        ("GRID", (0, 0), (-1, -1), 0.5, LIGHT_BORDER),
-        ("BOX", (0, 0), (-1, -1), 0.9, INK),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, SURFACE]),
+        ("LINEBELOW", (0, 1), (-1, -1), 0.5, LIGHT_BORDER),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING", (0, 0), (-1, -1), 7),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
         ("LEFTPADDING", (0, 0), (-1, -1), 6),
         ("RIGHTPADDING", (0, 0), (-1, -1), 6),
     ]))
@@ -331,28 +332,28 @@ def _build_doc(
     totals_table = Table(totals_rows, colWidths=[40 * mm, 34 * mm])
     style_cmds = [
         ("FONTNAME", (0, 0), (-1, -1), FONT_REGULAR),
-        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("FONTSIZE", (0, 0), (-1, -1), 9.5),
+        ("BACKGROUND", (0, 0), (-1, total_row_idx - 1), SURFACE),
         ("TEXTCOLOR", (0, 0), (0, total_row_idx - 1), MUTED),
         ("TEXTCOLOR", (1, 0), (1, total_row_idx - 1), INK),
         ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-        ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        ("LEFTPADDING", (0, 0), (-1, -1), 7),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 7),
-        ("BOX", (0, 0), (-1, -1), 0.8, LIGHT_BORDER),
-        ("LINEAFTER", (0, 0), (0, -1), 0.5, LIGHT_BORDER),
-        ("LINEBELOW", (0, 0), (-1, total_row_idx - 1), 0.4, LIGHT_BORDER),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
         ("BACKGROUND", (0, total_row_idx), (-1, total_row_idx), BRAND_COLOR),
         ("TEXTCOLOR", (0, total_row_idx), (-1, total_row_idx), colors.white),
-        ("FONTNAME", (0, total_row_idx), (-1, total_row_idx), FONT_BOLD),
-        ("FONTSIZE", (0, total_row_idx), (-1, total_row_idx), 10.5),
+        ("FONTNAME", (0, total_row_idx), (-1, total_row_idx), FONT_SEMIBOLD),
+        ("FONTSIZE", (0, total_row_idx), (-1, total_row_idx), 11),
+        ("TOPPADDING", (0, total_row_idx), (-1, total_row_idx), 7),
+        ("BOTTOMPADDING", (0, total_row_idx), (-1, total_row_idx), 7),
     ]
     if extra_rows:
         style_cmds += [
             ("TEXTCOLOR", (0, total_row_idx + 1), (-1, total_row_idx + 1), SUCCESS),
             ("TEXTCOLOR", (0, total_row_idx + 2), (-1, total_row_idx + 2),
              colors.HexColor("#DC2626") if due_amount and due_amount > 0 else SUCCESS),
-            ("FONTNAME", (0, total_row_idx + 1), (-1, total_row_idx + 2), FONT_BOLD),
+            ("FONTNAME", (0, total_row_idx + 1), (-1, total_row_idx + 2), FONT_SEMIBOLD),
         ]
     totals_table.setStyle(TableStyle(style_cmds))
     totals_table.hAlign = "RIGHT"
